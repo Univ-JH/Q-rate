@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { generateSingleQuestion } from '../services/geminiService';
 
 export default function CreateQuestion() {
   const [subject, setSubject] = useState('');
@@ -14,6 +15,10 @@ export default function CreateQuestion() {
   const [useAIGrading, setUseAIGrading] = useState(false);
   
   const [tagsInput, setTagsInput] = useState(''); // 신규: 태그 입력 상태
+
+  // AI 생성 로딩 및 키워드 상태
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
 
   // 태그 파싱 및 글자 수 검증 함수 (한글 10자, 영문 20자 제한)
   const parseAndValidateTags = (tagString) => {
@@ -50,6 +55,42 @@ export default function CreateQuestion() {
       setOptions(options.slice(0, -1));
       // 삭제된 보기가 정답이었을 경우 정답 초기화
       if (Number(answer) === options.length) setAnswer('');
+    }
+  };
+
+  // AI로 문제 생성하기 핸들러
+  const handleGenerateAI = async () => {
+    if (!aiTopic.trim()) {
+      alert('AI에게 출제를 부탁할 주제나 키워드를 입력해 주세요!');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // geminiService의 함수 호출
+      const generatedData = await generateSingleQuestion(aiTopic, type, difficulty);
+      
+      // 결과값을 React 상태(Form 필드)에 자동 채우기
+      setContent(generatedData.content || '');
+      
+      if (type === 'MULTIPLE_CHOICE') {
+        // AI가 준 보기가 4개 미만일 경우 빈 문자열로 채움
+        const newOptions = generatedData.options || [];
+        while (newOptions.length < 4) newOptions.push('');
+        setOptions(newOptions);
+        setAnswer(generatedData.answer || '');
+      } else {
+        setAnswer(generatedData.answer || '');
+      }
+
+      // 태그도 자동으로 하나 달아주기 (편의성)
+      setTagsInput(aiTopic.split(' ')[0]); // 첫 단어를 태그로 임시 설정
+
+      alert('✨ AI가 성공적으로 문제를 생성했습니다! 내용을 확인하고 수정해 보세요.');
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -92,6 +133,41 @@ export default function CreateQuestion() {
   return (
     <div className="max-w-2xl mx-auto my-1 p-8 bg-white border border-gray-200 rounded-2xl shadow-sm">
       <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-4">새로운 문제 출제</h2>
+
+      {/* ========================================================= */}
+      {/* 신규: AI 출제 도우미 패널 */}
+      {/* ========================================================= */}
+      <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl shadow-sm">
+        <h3 className="text-lg font-bold text-purple-900 mb-2 flex items-center gap-2">
+          <span>✨</span> AI 자동 출제 도우미
+        </h3>
+        <p className="text-sm text-purple-700 mb-4">
+          원하는 주제를 입력하면 AI가 아래 선택된 <strong>[유형]</strong>과 <strong>[난이도]</strong>에 맞춰 폼을 자동으로 채워줍니다.
+        </p>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            placeholder="예: 대한민국 헌법 제1조, 파이썬 반복문, 뉴턴의 제2법칙..." 
+            value={aiTopic}
+            onChange={(e) => setAiTopic(e.target.value)}
+            disabled={isGenerating}
+            className="flex-1 px-4 py-3 bg-white border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+          />
+          <button 
+            type="button" 
+            onClick={handleGenerateAI}
+            disabled={isGenerating}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors whitespace-nowrap disabled:opacity-50 flex items-center gap-2"
+          >
+            {isGenerating ? (
+              <><span className="animate-spin h-4 w-4 border-2 border-white border-b-transparent rounded-full"></span> 생성 중...</>
+            ) : (
+              '마법 생성'
+            )}
+          </button>
+        </div>
+      </div>
+      {/* ========================================================= */}
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         

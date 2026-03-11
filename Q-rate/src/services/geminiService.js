@@ -6,7 +6,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // 빠르고 저렴한 1.5 Flash 모델 사용
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 /**
  * AI를 이용해 단일 문제를 생성하는 함수
