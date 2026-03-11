@@ -26,7 +26,7 @@ export default function MyPage() {
 
   // 번역 헬퍼 함수
   const translateVisibility = (vis) => ({ PUBLIC: '전체 공개', LINK: '링크 공개', PRIVATE: '비공개' }[vis] || vis);
-  const translateDifficulty = (diff) => ({ EASY: '초급', MEDIUM: '중급', HARD: '고급' }[diff] || diff);
+  const translateDifficulty = (diff) => ({ NONE: '미선택', EASY: '초급', MEDIUM: '중급', HARD: '고급' }[diff] || diff);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -85,7 +85,7 @@ export default function MyPage() {
       setUserProfile({ ...userProfile, nickname: editNickname, interests: interestsArray });
       setIsEditing(false);
       alert('프로필이 수정되었습니다.');
-    } catch (error) {
+    } catch {
       alert('수정 중 오류가 발생했습니다.');
     }
   };
@@ -98,7 +98,7 @@ export default function MyPage() {
       if (collectionName === 'questions') setMyQuestions(prev => prev.filter(q => q.id !== id));
       if (collectionName === 'workbooks') setMyWorkbooks(prev => prev.filter(w => w.id !== id));
       alert('삭제되었습니다.');
-    } catch (error) {
+    } catch {
       alert('삭제 중 오류가 발생했습니다.');
     }
   };
@@ -120,7 +120,7 @@ export default function MyPage() {
       
       setEditingItem(null);
       alert('성공적으로 수정되었습니다.');
-    } catch (error) {
+    } catch {
       alert('수정 중 오류가 발생했습니다.');
     }
   };
@@ -153,12 +153,18 @@ export default function MyPage() {
             <h3>내 정보</h3>
             <p><strong>이메일:</strong> {user.email}</p>
             {isEditing ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                <div><label><strong>별명:</strong></label><input type="text" value={editNickname} onChange={(e) => setEditNickname(e.target.value)} style={{ marginLeft: '10px', padding: '5px' }} /></div>
-                <div><label><strong>관심분야:</strong></label><input type="text" value={editInterests} onChange={(e) => setEditInterests(e.target.value)} placeholder="쉼표로 구분" style={{ width: '250px', marginLeft: '10px', padding: '5px' }} /></div>
-                <div style={{ marginTop: '10px' }}>
-                  <button onClick={handleSaveProfile} style={{ padding: '5px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', marginRight: '10px' }}>저장</button>
-                  <button onClick={() => setIsEditing(false)} style={{ padding: '5px 15px' }}>취소</button>
+              <div className="flex flex-col gap-4 mt-6 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">별명</label>
+                  <input type="text" value={editNickname} onChange={(e) => setEditNickname(e.target.value)} className="w-full max-w-xs px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">관심분야 (쉼표 구분)</label>
+                  <input type="text" value={editInterests} onChange={(e) => setEditInterests(e.target.value)} placeholder="예: 수학, 디자인" className="w-full max-w-md px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" />
+                </div>
+                <div className="mt-2 flex gap-3">
+                  <button onClick={handleSaveProfile} className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors">저장</button>
+                  <button onClick={() => setIsEditing(false)} className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition-colors">취소</button>
                 </div>
               </div>
             ) : (
@@ -267,53 +273,86 @@ export default function MyPage() {
 
       {/* 간편 수정 모달 (팝업 형태) */}
       {editingItem && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '8px', width: '400px', maxWidth: '90%' }}>
-            <h3>{editingItem.type === 'question' ? '문제 간편 수정' : '문제집 간편 수정'}</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 border-b pb-3">
+              {editingItem.type === 'question' ? '문제 간편 수정' : '문제집 간편 수정'}
+            </h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-              {editingItem.type === 'workbook' && (
-                <>
-                  <input type="text" value={editingItem.data.title} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: e.target.value } })} placeholder="제목" style={{ padding: '8px' }} />
-                  <textarea value={editingItem.data.description} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })} placeholder="설명" rows="3" style={{ padding: '8px' }} />
-                </>
-              )}
-              
-              {editingItem.type === 'question' && (
-                <>
-                  <input type="text" value={editingItem.data.subject || ''} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, subject: e.target.value } })} placeholder="과목명" style={{ padding: '8px' }} />
-                  <textarea value={editingItem.data.content} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, content: e.target.value } })} placeholder="문제 내용" rows="4" style={{ padding: '8px' }} />
-                </>
-              )}
+            <div className="flex flex-col gap-4">
+              {/* 공통 적용할 테두리 클래스 변수화 */}
+              {(() => {
+                const modalInputClass = "w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow";
+                return (
+                  <>
+                    {editingItem.type === 'workbook' && (
+                      <>
+                        <input type="text" value={editingItem.data.title} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, title: e.target.value } })} placeholder="제목" className={modalInputClass} />
+                        <textarea value={editingItem.data.description} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value } })} placeholder="설명" rows="3" className={modalInputClass} />
+                        <input type="text" value={editingItem.data.tags ? editingItem.data.tags.join(', ') : ''} 
+                          onChange={(e) => {
+                            // 입력 시 배열 형태로 억지로 바꾸지 않고 원시 텍스트를 담아둘 임시 속성을 활용하거나 바로 파싱
+                            const rawArray = e.target.value.split(',');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, tags: rawArray } });
+                          }} 
+                          placeholder="태그 수정 (쉼표로 구분)" className={modalInputClass} 
+                        />
+                      </>
+                    )}
+                    
+                    {editingItem.type === 'question' && (
+                      <>
+                        <input type="text" value={editingItem.data.subject || ''} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, subject: e.target.value } })} placeholder="과목명" className={modalInputClass} />
+                        <textarea value={editingItem.data.content} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, content: e.target.value } })} placeholder="문제 내용" rows="4" className={modalInputClass} />
+                        <input type="text" value={editingItem.data.tags ? editingItem.data.tags.join(', ') : ''} 
+                          onChange={(e) => {
+                            const rawArray = e.target.value.split(',');
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, tags: rawArray } });
+                          }} 
+                          placeholder="태그 수정 (쉼표로 구분)" className={modalInputClass} 
+                        />
+                      </>
+                    )}
 
-              <select value={editingItem.data.difficulty} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, difficulty: e.target.value } })} style={{ padding: '8px' }}>
-                <option value="EASY">초급</option><option value="MEDIUM">중급</option><option value="HARD">고급</option>
-              </select>
+                    {/* 공통: 난이도 수정 */}
+                    <select value={editingItem.data.difficulty} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, difficulty: e.target.value } })} className={modalInputClass}>
+                      <option value="NONE">미선택</option>
+                      <option value="EASY">초급</option>
+                      <option value="MEDIUM">중급</option>
+                      <option value="HARD">고급</option>
+                    </select>
 
-              <select value={editingItem.data.visibility} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, visibility: e.target.value } })} style={{ padding: '8px' }}>
-                <option value="PRIVATE">🔒 비공개</option><option value="LINK">🔗 링크 공개</option><option value="PUBLIC">🌐 전체 공개</option>
-              </select>
+                    {/* 공개 설정 (문제는 링크 제외, 문제집은 링크 포함) */}
+                    {editingItem.type === 'question' ? (
+                      <select value={editingItem.data.visibility} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, visibility: e.target.value } })} className={modalInputClass}>
+                        <option value="PRIVATE">🔒 비공개</option>
+                        <option value="PUBLIC">🌐 전체 공개</option>
+                      </select>
+                    ) : (
+                      <select value={editingItem.data.visibility} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, visibility: e.target.value } })} className={modalInputClass}>
+                        <option value="PRIVATE">🔒 비공개</option>
+                        <option value="LINK">🔗 링크 공개</option>
+                        <option value="PUBLIC">🌐 전체 공개</option>
+                      </select>
+                    )}
 
-              {/* 신규: 문제집일 경우 응시 권한 수정 추가 */}
-              {editingItem.type === 'workbook' && (
-                <select 
-                  value={editingItem.data.requireLogin !== false ? 'MEMBER' : 'ANYONE'} 
-                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, requireLogin: e.target.value === 'MEMBER' } })} 
-                  style={{ padding: '8px' }}
-                >
-                  <option value="MEMBER">👤 회원만 응시 가능</option>
-                  <option value="ANYONE">🌐 누구나 응시 가능</option>
-                </select>
-              )}
+                    {editingItem.type === 'workbook' && (
+                      <select value={editingItem.data.requireLogin !== false ? 'MEMBER' : 'ANYONE'} onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, requireLogin: e.target.value === 'MEMBER' } })} className={modalInputClass}>
+                        <option value="MEMBER">👤 회원만 응시 가능</option>
+                        <option value="ANYONE">🌐 누구나 응시 가능</option>
+                      </select>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button onClick={() => setEditingItem(null)} style={{ padding: '8px 15px', cursor: 'pointer' }}>취소</button>
-              <button onClick={handleSaveItemEdit} style={{ padding: '8px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>저장</button>
+            <div className="flex justify-end gap-3 mt-8">
+              <button onClick={() => setEditingItem(null)} className="px-5 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg transition-colors">취소</button>
+              <button onClick={handleSaveItemEdit} className="px-5 py-2 bg-primary hover:bg-primaryHover text-white font-bold rounded-lg shadow-md transition-colors">수정 내용 저장</button>
             </div>
             
-            {/* Note */}
-            {editingItem.type === 'question' && <p style={{ fontSize: '11px', color: '#999', marginTop: '10px' }}>* 문제의 정답 및 보기를 근본적으로 변경하려면 새 문제를 생성하는 것을 권장합니다.</p>}
+            {editingItem.type === 'question' && <p className="text-xs text-gray-500 mt-4 leading-relaxed">* 문제의 정답 및 보기를 근본적으로 변경하려면 새 문제를 생성하는 것을 권장합니다.</p>}
           </div>
         </div>
       )}

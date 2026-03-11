@@ -41,7 +41,6 @@ export default function Login() {
         alert('회원가입이 완료되었습니다!');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        alert('로그인 성공!');
       }
       navigate('/');
     } catch (error) {
